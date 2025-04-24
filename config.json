@@ -1,0 +1,38 @@
+{
+    "editor": {
+        "theme": "vs-dark",
+        "fontLigatures": true,
+        "fontWeight": "750",
+        "fontFamily": "Noto Sans Mono",
+        "minimap": { "enabled": false },
+        "rulers": [ 80 ]
+    },
+    "fileExtensions": {
+        "js": "javascript",
+        "ts": "typescript",
+        "py": "python",
+        "java": "java",
+        "cpp": "cpp",
+        "c": "c",
+        "cs": "csharp",
+        "php": "php",
+        "go": "go",
+        "rb": "ruby",
+        "rs": "rust",
+        "html": "html",
+        "css": "css",
+        "json": "json",
+        "md": "markdown",
+        "yaml": "yaml",
+        "yml": "yaml",
+        "xml": "xml",
+        "sh": "shell",
+        "dockerfile": "dockerfile",
+        "makefile": "makefile",
+        "lua": "lua",
+        "r": "r",
+        "swift": "swift",
+        "kt": "kotlin",
+        "dart": "dart"
+    }
+}

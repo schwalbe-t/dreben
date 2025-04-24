@@ -1,23 +1,26 @@
 
 const express = require("express");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
-const app = express();
-const PORT = 3000;
-const BASE_DIR = "/home/schwalbe_t/"
 
+
+const PORT = 3000;
+const CONFIG_PATH = "config.json";
+
+
+const app = express();
 app.use(express.static(__dirname));
 app.use(express.json());
 
 app.get('/list', (req, res) => {
-    const dirPath = req.query.dirPath ? path.join(BASE_DIR, req.query.dirPath) : BASE_DIR;
+    const { dirPath } = req.query;
 	fs.stat(dirPath, (err, stats) => {
-		if (err || !stats.isDirectory()) {
+		if(err || !stats.isDirectory()) {
             return res.status(400).send('Invalid directory path');
         }
-
         fs.readdir(dirPath, { withFileTypes: true }, (err, files) => {
-            if (err) {
+            if(err) {
                 return res.status(500).send('Unable to scan directory');
             }
 			const fileInfo = files.map(file => ({
@@ -31,12 +34,11 @@ app.get('/list', (req, res) => {
 
 app.get('/read', (req, res) => {
     const { filePath } = req.query;
-    if (!filePath) {
+    if(!filePath) {
         return res.status(400).send('File path is required');
-    }    
-    const fullPath = path.join(BASE_DIR, filePath);
-    fs.readFile(fullPath, 'utf8', (err, data) => {
-        if (err) {
+    }
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if(err) {
             return res.status(500).send('Unable to read file');
         }
         res.send(data);
@@ -45,16 +47,19 @@ app.get('/read', (req, res) => {
 
 app.post('/save', (req, res) => {
     const { filePath, content } = req.body;
-    if (!filePath || content === undefined) {
+    if(!filePath || content === undefined) {
         return res.status(400).send('File path and content are required');
     }
-    const fullPath = path.join(BASE_DIR, filePath);
-    fs.writeFile(fullPath, content, 'utf8', (err) => {
-        if (err) {
+    fs.writeFile(filePath, content, 'utf8', (err) => {
+        if(err) {
             return res.status(500).send('Unable to write to file');
         }
         res.send('File saved successfully');
     });
+});
+
+app.get('/config_path', (req, res) => {
+    res.send(path.join(__dirname, CONFIG_PATH));
 });
 
 app.listen(PORT, () => {

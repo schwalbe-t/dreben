@@ -1,0 +1,105 @@
+
+body {
+    margin: 0px;
+    width: 100vw;
+    height: 100vh;
+}
+
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+.horizcontainer {
+    flex-direction: row;
+}
+.vertcontainer {
+    flex-direction: column;
+}
+
+.panel {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.horizcontainer > .panel {
+    min-width: 7.5rem;
+    height: 100%;
+}
+.vertcontainer > .panel {
+    width: 100%;
+    min-height: 7.5rem;
+}
+body > .panel {
+    width: 100%;
+    height: 100%;
+}
+
+.panel-header-bar {
+    position: relative;
+    width: 100%;
+    height: 2rem;
+    min-height: 2rem;
+    flex-shrink: 0;
+    background-color: red;
+}
+
+.panel-header-title {
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translate(0%, -50%);
+    font-size: 1rem;
+}
+
+.panel-header-close {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translate(0%, -50%);
+    font-size: 1rem;
+}
+
+.panel-content {
+    width: 100%;
+    flex-grow: 1;
+}
+
+.divider {
+    user-select: none;
+    background: green;
+}
+.horizdivider {
+    width: 3px;
+    height: 100%;
+    cursor: col-resize;
+}
+.vertdivider {
+    width: 100%;
+    height: 3px;
+    cursor: row-resize;
+}
+
+
+.filetree-item {
+    user-select: none;
+}
+.filetree-file {
+    cursor: grab;
+}
+.filetree-folder {
+    cursor: pointer;
+}
+.filetree-config {
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    font-size: 1rem;
+    user-select: none;
+    cursor: grab;
+    outline: 1px solid black;
+}
