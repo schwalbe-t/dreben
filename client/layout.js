@@ -70,7 +70,8 @@ const Panel = Object.freeze({
         update: panel => panel.children.forEach(
             c => Panel[c.panel.id].update(c.panel)
         ),
-        close: p => {}
+        close: p => {},
+        allowDragReplacement: false
     },
 
     HorizontalList: {
@@ -103,7 +104,8 @@ const Panel = Object.freeze({
         update: panel => panel.children.forEach(
             c => Panel[c.panel.id].update(c.panel)
         ),
-        close: p => {}
+        close: p => {},
+        allowDragReplacement: false
     },
 
     ProjectSelector: {
@@ -133,7 +135,8 @@ const Panel = Object.freeze({
         },
         replace: p => p,
         update: p => {},
-        close: p => {}
+        close: p => {},
+        allowDragReplacement: false
     },
 
     FileTree: {
@@ -197,7 +200,8 @@ const Panel = Object.freeze({
         },
         replace: p => p,
         update: p => {},
-        close: p => {}
+        close: p => {},
+        allowDragReplacement: false
     },
 
     Editor: {
@@ -207,59 +211,57 @@ const Panel = Object.freeze({
         }; },
         title: panel => panel.path,
         build: (panel, e, session, title) => {
-            require(['vs/editor/editor.main'], function() {
-                let editor = openEditors[panel.path];
-                if(editor === undefined) {
-                    const ext = panel.path.split(".").at(-1);
-                    const element = document.createElement("div");
-                    element.style.width = "100%";
-                    element.style.height = "100%";
-                    const params = JSON.parse(JSON.stringify(config.editor));
-                    params.value = "Loading file...";
-                    params.language = config.fileExtensions[ext];
-                    editor = {
-                        element, 
-                        editor: monaco.editor.create(element, params),
-                        content: "",
-                        title
-                    };
-                    editor.editor.onDidChangeModelContent(() => {
-                        editor.content = editor.editor.getValue();
-                        editor.title.innerText = `${panel.path}*`;
-                    });
-                    document.addEventListener('keydown', e => {
-                        if((e.ctrlKey || e.metaKey) && e.key === 's') {
-                            e.preventDefault();
-                            if(!editor.editor.hasTextFocus()) { return; }
-                            const fd = new FormData();
-                            fd.append("filePath", panel.path);
-                            fd.append("content", editor.content);
-                            fetch("/save", {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    filePath: panel.path,
-                                    content: editor.content
-                                })
-                            }).then(r => {
-                                if(r.ok) {
-                                    editor.title.innerText = `${panel.path}`;
-                                }
+            let editor = openEditors[panel.path];
+            if(editor === undefined) {
+                const ext = panel.path.split(".").at(-1);
+                const element = document.createElement("div");
+                element.style.width = "100%";
+                element.style.height = "100%";
+                const params = JSON.parse(JSON.stringify(config.editor));
+                params.value = "Loading file...";
+                params.language = config.fileExtensions[ext];
+                editor = {
+                    element, 
+                    editor: monaco.editor.create(element, params),
+                    content: "",
+                    title
+                };
+                editor.editor.onDidChangeModelContent(() => {
+                    editor.content = editor.editor.getValue();
+                    editor.title.innerText = `${panel.path}*`;
+                });
+                document.addEventListener('keydown', e => {
+                    if((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        if(!editor.editor.hasTextFocus()) { return; }
+                        const fd = new FormData();
+                        fd.append("filePath", panel.path);
+                        fd.append("content", editor.content);
+                        fetch("/save", {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                filePath: panel.path,
+                                content: editor.content
                             })
-                        }
+                        }).then(r => {
+                            if(r.ok) {
+                                editor.title.innerText = `${panel.path}`;
+                            }
+                        })
+                    }
+                });
+                fetch(`/read?filePath=${encodeURIComponent(panel.path)}`)
+                    .then(r => r.text())
+                    .then(content => {
+                        editor.content = content;
+                        editor.editor.setValue(content);
+                        editor.title.innerText = `${panel.path}`;
                     });
-                    fetch(`/read?filePath=${encodeURIComponent(panel.path)}`)
-                        .then(r => r.text())
-                        .then(content => {
-                            editor.content = content;
-                            editor.editor.setValue(content);
-                            editor.title.innerText = `${panel.path}`;
-                        });
-                }
-                editor.title = title;
-                openEditors[panel.path] = editor;
-                e.appendChild(editor.element);
-            });
+            }
+            editor.title = title;
+            openEditors[panel.path] = editor;
+            e.appendChild(editor.element);
         },
         replace: p => p,
         update: p => {
@@ -272,7 +274,8 @@ const Panel = Object.freeze({
             if(editor === undefined) { return; }
             editor.editor.dispose();
             delete openEditors[p.path];
-        }
+        },
+        allowDragReplacement: true
     }
 
 });
@@ -327,18 +330,25 @@ function buildPanel(panel, session, parentPanel = null) {
         t.innerText = panelType.title(panel);
         h.appendChild(t);
         if(parentPanel !== null) {
+            const detachPanel = () => {
+                const i = parentPanel.children
+                    .findIndex(c => c.panel === panel);
+                parentPanel.children.splice(i, 1);
+            };
             const c = document.createElement("button");
             c.classList.add("panel-header-close");
             c.innerText = "X";
             c.onclick = () => {
-                const i = parentPanel.children
-                    .findIndex(c => c.panel === panel);
-                parentPanel.children.splice(i, 1);
+                detachPanel();
                 Panel[panel.id].close(panel);
                 applyLayout(session);
                 saveSession();
             };
             h.appendChild(c);
+            makePanelDraggable(h, () => {
+                detachPanel();
+                return panel;
+            });
         }
         p.appendChild(h);
     }
@@ -355,16 +365,21 @@ function buildPanel(panel, session, parentPanel = null) {
         const bounds = p.getBoundingClientRect();
         const normX = (e.clientX - bounds.left) / (bounds.right - bounds.left);
         const normY = (e.clientY - bounds.top) / (bounds.bottom - bounds.top);
-        const normCDX = Math.abs(0.5 - normX);
-        const normCDY = Math.abs(0.5 - normY);
+        const normCX = normX - 0.5;
+        const normCY = normY - 0.5;
         let newPanel;
-        if(normCDX < 0.25 && normCDY < 0.25) {
+        const allowReplacement = Panel[panel.id].allowDragReplacement;
+        if(Math.abs(normCX) < 0.25 && Math.abs(normCY) < 0.25 && allowReplacement) {
             newPanel = draggedPanel();
             Panel[panel.id].close(panel);
         } else {
-            newPanel = (normCDX > normCDY)
-                ? Panel.HorizontalList.create(panel, draggedPanel())
-                : Panel.VerticalList.create(panel, draggedPanel());
+            newPanel = (Math.abs(normCX) > Math.abs(normCY))
+                ? normCX >= 0
+                    ? Panel.HorizontalList.create(panel, draggedPanel())
+                    : Panel.HorizontalList.create(draggedPanel(), panel)
+                : normCY >= 0
+                    ? Panel.VerticalList.create(panel, draggedPanel())
+                    : Panel.VerticalList.create(draggedPanel(), panel);
         }
         if(parentPanel !== null) {
             const i = parentPanel.children

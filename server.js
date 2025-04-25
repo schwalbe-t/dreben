@@ -6,7 +6,6 @@ const path = require("path");
 
 
 const PORT = 3000;
-const CONFIG_PATH = "config.json";
 
 
 const app = express();
@@ -58,8 +57,8 @@ app.post('/save', (req, res) => {
     });
 });
 
-app.get('/config_path', (req, res) => {
-    res.send(path.join(__dirname, CONFIG_PATH));
+app.get('/server_path', (req, res) => {
+    res.send(__dirname);
 });
 
 app.listen(PORT, () => {

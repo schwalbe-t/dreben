@@ -26,31 +26,49 @@ function saveSession() {
     localStorage["session"] = JSON.stringify(session);
 }
 
+let serverPath = null;
 let configPath = null;
 let config = null;
-fetch("/config_path").then(r => r.text()).then(p => {
-    configPath = p;
-    fetch(`/read?filePath=${encodeURIComponent(configPath)}`)
-        .then(r => r.text())
-        .then(content => {
-            config = JSON.parse(content);
-            if(!windowInitialized) { return; }
-            init();
-        });
-});
+function loadConfig(onDone) {
+    fetch("/server_path").then(r => r.text()).then(p => {
+        serverPath = p;
+        configPath = joinPaths(p, "config.json");
+        fetch(`/read?filePath=${encodeURIComponent(configPath)}`)
+            .then(r => r.text())
+            .then(content => {
+                config = JSON.parse(content);
+                loadTheme(onDone);
+            });
+    });
+}
 
-let windowInitialized = false;
-window.onload = () => {
-    windowInitialized = true;
-    if(config === null) { return; }
-    init();
-};
+let themeData = null;
+function loadTheme(onDone) {
+    const themePath = joinPaths(joinPaths(serverPath, "themes"), config.themePath);
+    require(['vs/editor/editor.main'], () => {
+        fetch(`/read?filePath=${encodeURIComponent(themePath)}`)
+            .then(r => r.text())
+            .then(content => {
+                themeData = JSON.parse(content);
+                monaco.editor.defineTheme('customtheme', themeData);
+                monaco.editor.setTheme('customtheme');
+                document.documentElement.style.setProperty(
+                    '--editor-background', themeData.colors["editor.background"]
+                );
+                document.documentElement.style.setProperty(
+                    '--editor-text', themeData.colors["editor.foreground"]
+                );
+                onDone();
+            });
+    });
+}
 
-let initialized = false;
+function loadWindow(onDone) {
+    window.onload = () => onDone();
+}
+
 let fileTree = null;
-function init() {
-    if(initialized) { return; }
-    initialized = true;
+loadAll([ loadConfig, loadWindow ], () => {
     applyLayout(session);
     if(session.projectPath !== null) {
         collectFileTree(session.projectPath).then(t => {
@@ -59,4 +77,4 @@ function init() {
         });
     }
     setInterval(() => updateLayout(session), 100);
-}
+});

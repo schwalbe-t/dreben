@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "express": "^4.21.2",
-    "monaco-editor": "^0.52.2"
+    "monaco-editor": "^0.52.2",
+    "monaco-themes": "^0.4.4"
   }
 }

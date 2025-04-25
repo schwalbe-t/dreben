@@ -1,12 +1,12 @@
 {
     "editor": {
-        "theme": "vs-dark",
         "fontLigatures": true,
         "fontWeight": "750",
         "fontFamily": "Noto Sans Mono",
         "minimap": { "enabled": false },
         "rulers": [ 80 ]
     },
+    "themePath": "Dracula.json",
     "fileExtensions": {
         "js": "javascript",
         "ts": "typescript",
