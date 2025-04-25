@@ -11,6 +11,15 @@ function normalizeListChildren(children) {
     }
 }
 
+function closeListChildren(panel) {
+    panel.children = panel.children.filter(c => {
+        const panelType = Panel[c.panel.id];
+        if(!panelType.shouldClose(c.panel)) { return true; }
+        panelType.close(c.panel);
+        return false;
+    });
+}
+
 function replaceListChildren(panel) {
     if(panel.children.length === 1) { 
         const p = panel.children[0].panel;
@@ -50,6 +59,7 @@ const Panel = Object.freeze({
         }; },
         title: null,
         build: (panel, e, session) => {
+            closeListChildren(panel);
             normalizeListChildren(panel.children);
             e.classList.add("container", "vertcontainer");
             const children = panel.children.map(c => {
@@ -70,8 +80,10 @@ const Panel = Object.freeze({
         update: panel => panel.children.forEach(
             c => Panel[c.panel.id].update(c.panel)
         ),
+        shouldClose: p => p.children.length === 0,
         close: p => {},
-        allowDragReplacement: false
+        allowDragReplacement: false,
+        allowManualClosing: false
     },
 
     HorizontalList: {
@@ -84,6 +96,7 @@ const Panel = Object.freeze({
         }; },
         title: null,
         build: (panel, e, session) => {
+            closeListChildren(panel);
             normalizeListChildren(panel.children);
             e.classList.add("container", "horizcontainer");
             const children = panel.children.map(c => {
@@ -104,8 +117,10 @@ const Panel = Object.freeze({
         update: panel => panel.children.forEach(
             c => Panel[c.panel.id].update(c.panel)
         ),
+        shouldClose: p => p.children.length === 0,
         close: p => {},
-        allowDragReplacement: false
+        allowDragReplacement: false,
+        allowManualClosing: false
     },
 
     ProjectSelector: {
@@ -114,38 +129,54 @@ const Panel = Object.freeze({
         }; },
         title: panel => "Project Selection",
         build: (panel, e) => {
-            const p = document.createElement("p");
-            p.innerText = "Enter the full path of the project directory:";
-            e.appendChild(p);
-            const i = document.createElement("input");
-            i.placeholder = "Full project directory";
-            i.style.width = "50%";
-            e.appendChild(i);
-            const c = document.createElement("button");
-            c.innerText = "Confirm";
-            c.onclick = () => {
-                collectFileTree(i.value).then(t => {
+            const container = document.createElement("div");
+            container.classList.add("project-selector-container");
+            const prompt = document.createElement("p");
+            prompt.classList.add("project-selector-prompt");
+            prompt.innerText = "Project Directory";
+            container.appendChild(prompt);
+            const info = document.createElement("p");
+            info.innerText = 'Provide the full path of the project directory, e.g. "/home/some_user/my_project"';
+            container.appendChild(info);
+            const input = document.createElement("input");
+            input.placeholder = "Full project directory";
+            input.style.width = "50%";
+            container.appendChild(input);
+            const confirm = document.createElement("button");
+            confirm.innerText = "Confirm";
+            confirm.onclick = () => {
+                const selected = input.value;
+                collectFileTree(selected).then(t => {
                     fileTree = t;
-                    session = createSessionFromPath(i.value);
+                    session = createSessionFromPath(selected);
                     applyLayout(session);
                     saveSession();
                 });
             };
-            e.appendChild(c);
+            container.appendChild(confirm);
+            e.appendChild(container);
         },
         replace: p => p,
         update: p => {},
+        shouldClose: p => false,
         close: p => {},
-        allowDragReplacement: false
+        allowDragReplacement: false,
+        allowManualClosing: false
     },
 
     FileTree: {
         create: () => { return {
             id: "FileTree"
         }; },
-        title: null,
+        title: panel => `Files (${session.projectPath.split("/").at(-1)})`,
         build: (panel, e) => {
-            const dirToElem = dir => {
+            const c = document.createElement("div");
+            c.classList.add("filetree-container");
+            e.appendChild(c);
+            const l = document.createElement("div");
+            l.classList.add("filetree-file-list");
+            c.appendChild(l);
+            const dirToElem = (dir, indent = 0) => {
                 dir.sort((a, b) => {
                     const isADir = a.files !== undefined;
                     const isBDir = b.files !== undefined;
@@ -153,34 +184,57 @@ const Panel = Object.freeze({
                     if(!isADir && isBDir) { return 1; }
                     return a.name.localeCompare(b.name);
                 });
-                const d = document.createElement("ul");
+                const d = document.createElement("div");
                 for(const file of dir) {
                     const isDir = file.files !== undefined;
-                    const f = document.createElement("li");
-                    const n = document.createElement("span");
-                    n.innerText = file.name;
-                    n.classList.add("filetree-item",
+                    const f = document.createElement("div");
+                    const fc = document.createElement("div");
+                    fc.classList.add("filetree-file-container");
+                    f.appendChild(fc);
+                    const ic = document.createElement("div");
+                    ic.classList.add("filetree-item-container");
+                    ic.classList.add(
                         isDir? "filetree-folder" : "filetree-file"
                     );
-                    f.appendChild(n);
+                    ic.style.setProperty('--indent', indent);
                     if(isDir) {
-                        const c = dirToElem(file.files);
-                        const opened = session.foldersOpen[file.full];
-                        c.hidden = opened === undefined? true : !opened;
-                        n.innerText = `📁 ${file.name}`;
-                        n.onclick = () => {
-                            c.hidden = !c.hidden;
-                            session.foldersOpen[file.full] = !c.hidden;
-                            n.innerText 
-                                = `${c.hidden? '📁' : '📂'} ${file.name}`;
+                        const i = document.createElement("img");
+                        i.classList.add("filetree-item-icon");
+                        const setFolderIcon = open => {
+                            i.src = "client/icons/" + (open
+                                ? "arrow_drop_down.svg" : "arrow_right.svg"
+                            );
+                        };
+                        ic.appendChild(i);
+                        const c = dirToElem(file.files, indent + 1);
+                        let opened = session.foldersOpen[file.full];
+                        if(opened === undefined) { opened = false; }
+                        c.hidden = !opened;
+                        setFolderIcon(opened);
+                        fc.onclick = () => {
+                            opened = !opened;
+                            c.hidden = !opened;
+                            session.foldersOpen[file.full] = opened;
+                            setFolderIcon(opened);
                             saveSession();
                         };
                         f.appendChild(c);
                     } else {
+                        const i = document.createElement("div");
+                        i.classList.add("filetree-item-icon");
+                        ic.appendChild(i);
                         makePanelDraggable(
-                            n, () => Panel.Editor.create(file.full)
+                            fc, () => Panel.Editor.create(file.full)
                         );
                     }
+                    const nc = document.createElement("div");
+                    nc.classList.add("filetree-name-container");
+                    const n = document.createElement("div");
+                    n.classList.add("filetree-name");
+                    n.innerText = file.name;
+                    nc.appendChild(n);
+                    ic.appendChild(nc);
+                    fc.appendChild(ic);
                     d.appendChild(f);
                 }
                 return d;
@@ -188,20 +242,33 @@ const Panel = Object.freeze({
             if(fileTree === null) {
                 const msg = document.createElement("p");
                 msg.innerText = "Indexing project...";
-                e.appendChild(msg);
+                l.appendChild(msg);
                 return;
             }
-            e.appendChild(dirToElem(fileTree));
+            l.appendChild(dirToElem(fileTree));
+            const footer = document.createElement("div");
+            footer.classList.add("filetree-footer");
             const config = document.createElement("div");
             config.innerText = "config.json";
             config.classList.add("filetree-config");
             makePanelDraggable(config, () => Panel.Editor.create(configPath));
-            e.appendChild(config);
+            footer.appendChild(config);
+            const exit = document.createElement("div");
+            exit.innerText = "Open Another Project";
+            exit.classList.add("filetree-exit");
+            exit.onclick = () => {
+                session = createEmptySession();
+                applyLayout(session);
+            };
+            footer.appendChild(exit);
+            c.appendChild(footer);
         },
         replace: p => p,
         update: p => {},
+        shouldClose: p => false,
         close: p => {},
-        allowDragReplacement: false
+        allowDragReplacement: false,
+        allowManualClosing: false
     },
 
     Editor: {
@@ -228,7 +295,7 @@ const Panel = Object.freeze({
                 };
                 editor.editor.onDidChangeModelContent(() => {
                     editor.content = editor.editor.getValue();
-                    editor.title.innerText = `${panel.path}*`;
+                    editor.title.innerText = `${panel.path} ⬤`;
                 });
                 document.addEventListener('keydown', e => {
                     if((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -269,13 +336,15 @@ const Panel = Object.freeze({
             if(editor === undefined) { return; }
             editor.editor.layout();
         },
+        shouldClose: p => false,
         close: p => {
             const editor = openEditors[p.path];
             if(editor === undefined) { return; }
             editor.editor.dispose();
             delete openEditors[p.path];
         },
-        allowDragReplacement: true
+        allowDragReplacement: true,
+        allowManualClosing: true
     }
 
 });
@@ -335,16 +404,18 @@ function buildPanel(panel, session, parentPanel = null) {
                     .findIndex(c => c.panel === panel);
                 parentPanel.children.splice(i, 1);
             };
-            const c = document.createElement("button");
-            c.classList.add("panel-header-close");
-            c.innerText = "X";
-            c.onclick = () => {
-                detachPanel();
-                Panel[panel.id].close(panel);
-                applyLayout(session);
-                saveSession();
-            };
-            h.appendChild(c);
+            if(panelType.allowManualClosing) {
+                const c = document.createElement("img");
+                c.classList.add("panel-header-close");
+                c.src = "client/icons/close.svg";
+                c.onclick = () => {
+                    detachPanel();
+                    Panel[panel.id].close(panel);
+                    applyLayout(session);
+                    saveSession();
+                };
+                h.appendChild(c);
+            }
             makePanelDraggable(h, () => {
                 detachPanel();
                 return panel;
@@ -399,6 +470,7 @@ function applyLayout(session) {
     session.panel = Panel[session.panel.id].replace(session.panel);
     document.body.innerHTML = "";
     document.body.appendChild(buildPanel(session.panel, session));
+    document.title = `Dreben | ${session.projectPath.split("/").at(-1)}`;
 }
 
 function updateLayout(session) {

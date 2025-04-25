@@ -53,10 +53,16 @@ function loadTheme(onDone) {
                 monaco.editor.defineTheme('customtheme', themeData);
                 monaco.editor.setTheme('customtheme');
                 document.documentElement.style.setProperty(
-                    '--editor-background', themeData.colors["editor.background"]
+                    '--editor-background', 
+                    themeData.colors["editor.background"]
                 );
                 document.documentElement.style.setProperty(
-                    '--editor-text', themeData.colors["editor.foreground"]
+                    '--select-background', 
+                    themeData.colors["editor.selectionBackground"]
+                );
+                document.documentElement.style.setProperty(
+                    '--editor-text',
+                    themeData.colors["editor.foreground"]
                 );
                 onDone();
             });

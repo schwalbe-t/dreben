@@ -11,7 +11,9 @@
 
 :root {
     --editor-background: black;
+    --select-background: black;
     --editor-text: white;
+    --info-text: #a1a1a1;
 }
 
 body {
@@ -19,7 +21,7 @@ body {
     width: 100vw;
     height: 100vh;
     background: var(--editor-background);
-    color: color-mix(in srgb, var(--editor-text) 25%, transparent);
+    color: var(--info-text);
     font-family: "Rubik";
 }
 
@@ -36,10 +38,10 @@ body {
 }
 
 .panel {
-    overflow: auto;
     display: flex;
     flex-direction: column;
     flex: 1;
+    position: relative;
 }
 .horizcontainer > .panel {
     min-width: 7.5rem;
@@ -59,51 +61,103 @@ body > .panel {
     cursor: grab;
     position: relative;
     width: 100%;
-    height: 2rem;
-    min-height: 2rem;
+    height: 3rem;
+    min-height: 3rem;
     flex-shrink: 0;
-    border: 1px solid var(--editor-semitext);
 }
 
 .panel-header-title {
     position: absolute;
-    left: 0.5rem;
+    left: 1rem;
     top: 50%;
     transform: translate(0%, -50%);
-    font-size: 0.9em;
+    font-size: 0.75em;
 }
 
 .panel-header-close {
     position: absolute;
-    right: 0.5rem;
+    right: 1.0rem;
     top: 50%;
+    height: 1rem;
     transform: translate(0%, -50%);
-    font-size: 1rem;
+    cursor: pointer;
+}
+.panel-header-close:hover {
+    background: var(--select-background);
 }
 
 .panel-content {
     width: 100%;
     flex-grow: 1;
+    overflow: auto;
 }
 
 .divider {
+    position: relative;
     user-select: none;
-    background: color-mix(in srgb, var(--editor-text) 5%, transparent);
 }
 .horizdivider {
-    width: 2px;
+    width: 10px;
     height: 100%;
     cursor: col-resize;
 }
+.horizdivider::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0px;
+    width: 1px;
+    height: 100%;
+    background: var(--select-background);
+    transform: translateX(-50%);
+}
+.horizdivider:hover::after {
+    background: var(--info-text);
+}
 .vertdivider {
     width: 100%;
-    height: 2px;
+    height: 10px;
     cursor: row-resize;
+}
+.vertdivider::after {
+    content: "";
+    position: absolute;
+    left: 0px;
+    top: 50%;
+    width: 100%;
+    height: 1px;
+    background: var(--select-background);
+    transform: translateY(-50%);
+}
+.vertdivider:hover::after {
+    background: var(--info-text);
 }
 
 
-.filetree-item {
+.filetree-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.filetree-file-list {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    padding-bottom: 20rem;
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+.filetree-file-container {
+    position: relative;
+    width: 100%;
     user-select: none;
+}
+.filetree-file-container:hover {
+    background: var(--select-background);
 }
 .filetree-file {
     cursor: grab;
@@ -111,15 +165,88 @@ body > .panel {
 .filetree-folder {
     cursor: pointer;
 }
-.filetree-config {
+.filetree-item-container {
+    margin-left: calc(var(--indent) * 1rem);
+    display: flex;
+    flex-direction: row;
+}
+.filetree-item-icon {
+    display: inline-block;
+    height: 1.5rem;
+    aspect-ratio: 1;
+}
+.filetree-name-container {
+    position: relative;
+    flex-grow: 1;
+}
+.filetree-name {
     position: absolute;
-    left: 0px;
-    bottom: 0px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.filetree-footer {
     width: 100%;
     box-sizing: border-box;
-    padding: 0.5rem;
-    font-size: 1rem;
+    padding: 1rem;
     user-select: none;
+    background: var(--editor-background);
+}
+.filetree-config {
+    font-size: 1rem;
     cursor: grab;
-    outline: 1px solid color-mix(in srgb, var(--editor-text) 5%, transparent);
+}
+.filetree-exit {
+    margin-top: 1rem;
+    font-size: 1rem;
+}
+.filetree-exit:hover {
+    background: var(--select-background);
+}
+
+
+.project-selector-container {
+    padding: 2rem;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+}
+
+.project-selector-prompt {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.project-selector-container > input {
+    background: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    outline: 1px solid var(--select-background);
+    border: none;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+.project-selector-container > input:focus {
+    color: var(--editor-text);
+    outline: 1px solid var(--info-text);
+}
+
+.project-selector-container > button {
+    margin-left: 1rem;
+    background: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    outline: 1px solid var(--select-background);
+    border: none;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+.project-selector-container > button:hover {
+    color: var(--editor-background);
+    background-color: var(--editor-text);
+    outline: 1px solid var(--editor-text);
 }
