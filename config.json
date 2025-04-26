@@ -4,7 +4,11 @@
         "fontWeight": "750",
         "fontFamily": "Noto Sans Mono",
         "minimap": { "enabled": false },
-        "rulers": [ 80 ]
+        "rulers": [ 80 ],
+        "bracketPairColorization.enabled": false,
+        "guides": {
+            "indentation": false 
+        }
     },
     "themePath": "Dracula.json",
     "fileExtensions": {
