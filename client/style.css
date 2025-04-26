@@ -57,6 +57,7 @@ body > .panel {
 }
 
 .panel-drop-preview {
+    pointer-events: none;
     position: absolute;
     background: var(--select-background);
     opacity: 0.5;
