@@ -56,12 +56,48 @@ body > .panel {
     height: 100%;
 }
 
+.panel-drop-preview {
+    position: absolute;
+    background: var(--select-background);
+    opacity: 0.5;
+}
+.panel-drop-preview.preview-full {
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+}
+.panel-drop-preview.preview-left {
+    left: 0px;
+    top: 0px;
+    width: 50%;
+    height: 100%;
+}
+.panel-drop-preview.preview-right {
+    right: 0px;
+    top: 0px;
+    width: 50%;
+    height: 100%;
+}
+.panel-drop-preview.preview-top {
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 50%;
+}
+.panel-drop-preview.preview-bottom {
+    left: 0px;
+    bottom: 0px;
+    width: 100%;
+    height: 50%;
+}
+
 .panel-header-bar {
     user-select: none;
     cursor: grab;
     position: relative;
     width: 100%;
-    height: 3rem;
+    height: 1.5rem;
     min-height: 3rem;
     flex-shrink: 0;
 }
@@ -139,6 +175,7 @@ body > .panel {
     flex-direction: column;
     width: 100%;
     height: 100%;
+    font-size: 0.8rem;
 }
 
 .filetree-file-list {
@@ -172,7 +209,7 @@ body > .panel {
 }
 .filetree-item-icon {
     display: inline-block;
-    height: 1.5rem;
+    height: 1.3rem;
     aspect-ratio: 1;
 }
 .filetree-name-container {

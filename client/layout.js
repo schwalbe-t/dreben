@@ -45,7 +45,7 @@ function makePanelDraggable(elem, f) {
     });
 }
 
-let openEditors = {};
+let openFiles = {};
 
 const Panel = Object.freeze({
 
@@ -83,7 +83,8 @@ const Panel = Object.freeze({
         shouldClose: p => p.children.length === 0,
         close: p => {},
         allowDragReplacement: false,
-        allowManualClosing: false
+        allowManualClosing: false,
+        showDropPreview: false
     },
 
     HorizontalList: {
@@ -120,7 +121,8 @@ const Panel = Object.freeze({
         shouldClose: p => p.children.length === 0,
         close: p => {},
         allowDragReplacement: false,
-        allowManualClosing: false
+        allowManualClosing: false,
+        showDropPreview: false
     },
 
     ProjectSelector: {
@@ -161,14 +163,18 @@ const Panel = Object.freeze({
         shouldClose: p => false,
         close: p => {},
         allowDragReplacement: false,
-        allowManualClosing: false
+        allowManualClosing: false,
+        showDropPreview: false
     },
 
     FileTree: {
         create: () => { return {
             id: "FileTree"
         }; },
-        title: panel => `Files (${session.projectPath.split("/").at(-1)})`,
+        title: panel => {
+            const name = session.projectPath.split("/").filter(s => s).at(-1);
+            return `Files (${name})`;
+        },
         build: (panel, e) => {
             const c = document.createElement("div");
             c.classList.add("filetree-container");
@@ -268,7 +274,8 @@ const Panel = Object.freeze({
         shouldClose: p => false,
         close: p => {},
         allowDragReplacement: false,
-        allowManualClosing: false
+        allowManualClosing: false,
+        showDropPreview: true
     },
 
     Editor: {
@@ -278,73 +285,86 @@ const Panel = Object.freeze({
         }; },
         title: panel => panel.path,
         build: (panel, e, session, title) => {
-            let editor = openEditors[panel.path];
-            if(editor === undefined) {
+            let file = openFiles[panel.path];
+            if(file === undefined) {
                 const ext = panel.path.split(".").at(-1);
+                file = {
+                    model: monaco.editor.createModel(
+                        "Loading file...",
+                        config.fileExtensions[ext]
+                    ),
+                    editors: new Map()
+                };
+                openFiles[panel.path] = file;
+                fetch(`/read?filePath=${encodeURIComponent(panel.path)}`)
+                    .then(r => r.text())
+                    .then(content => {
+                        file.model.setValue(content);
+                        for(const [editorPanel, editor] of file.editors) {
+                            editor.title.innerText = `${editorPanel.path}`;
+                        }
+                    });
+            }
+            let editor = file.editors.get(panel);
+            if(editor === undefined) {
                 const element = document.createElement("div");
                 element.style.width = "100%";
                 element.style.height = "100%";
                 const params = JSON.parse(JSON.stringify(config.editor));
-                params.value = "Loading file...";
-                params.language = config.fileExtensions[ext];
+                params.model = file.model;
                 editor = {
-                    element, 
+                    element,
                     editor: monaco.editor.create(element, params),
-                    content: "",
                     title
                 };
+                file.editors.set(panel, editor);
                 editor.editor.onDidChangeModelContent(() => {
-                    editor.content = editor.editor.getValue();
                     editor.title.innerText = `${panel.path} ⬤`;
                 });
                 document.addEventListener('keydown', e => {
                     if((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
                         if(!editor.editor.hasTextFocus()) { return; }
-                        const fd = new FormData();
-                        fd.append("filePath", panel.path);
-                        fd.append("content", editor.content);
                         fetch("/save", {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
                                 filePath: panel.path,
-                                content: editor.content
+                                content: file.model.getValue()
                             })
                         }).then(r => {
-                            if(r.ok) {
-                                editor.title.innerText = `${panel.path}`;
+                            if(!r.ok) { return; }
+                            for(const [editorPanel, editor] of file.editors) {
+                                editor.title.innerText = `${editorPanel.path}`;
                             }
                         })
                     }
                 });
-                fetch(`/read?filePath=${encodeURIComponent(panel.path)}`)
-                    .then(r => r.text())
-                    .then(content => {
-                        editor.content = content;
-                        editor.editor.setValue(content);
-                        editor.title.innerText = `${panel.path}`;
-                    });
             }
             editor.title = title;
-            openEditors[panel.path] = editor;
             e.appendChild(editor.element);
         },
         replace: p => p,
         update: p => {
-            const editor = openEditors[p.path];
+            const file = openFiles[p.path];
+            const editor = file.editors.get(p);
             if(editor === undefined) { return; }
             editor.editor.layout();
         },
         shouldClose: p => false,
         close: p => {
-            const editor = openEditors[p.path];
+            const file = openFiles[p.path];
+            const editor = file.editors.get(p);
             if(editor === undefined) { return; }
             editor.editor.dispose();
-            delete openEditors[p.path];
+            file.editors.delete(p);
+            if(file.editors.size === 0) {
+                delete openFiles[p.path];
+            }
         },
         allowDragReplacement: true,
-        allowManualClosing: true
+        allowManualClosing: true,
+        showDropPreview: true
     }
 
 });
@@ -386,6 +406,11 @@ function buildDivider(isVertical, container, panels, elems, prevIdx) {
     return d;
 }
 
+const DROP_PREVIEW_CLASSES = [
+    "preview-full", 
+    "preview-left", "preview-right", "preview-top", "preview-bottom"
+];
+
 function buildPanel(panel, session, parentPanel = null) {
     const panelType = Panel[panel.id];
     const p = document.createElement("div");
@@ -416,7 +441,8 @@ function buildPanel(panel, session, parentPanel = null) {
                 };
                 h.appendChild(c);
             }
-            makePanelDraggable(h, () => {
+            makePanelDraggable(h, replaces => {
+                if(replaces === panel) { return null; }
                 detachPanel();
                 return panel;
             });
@@ -427,30 +453,59 @@ function buildPanel(panel, session, parentPanel = null) {
     c.classList.add("panel-content");
     panelType.build(panel, c, session, t);
     p.appendChild(c);
+    const prev = document.createElement("div");
+    prev.classList.add("panel-drop-preview");
+    p.appendChild(prev);
     p.addEventListener("dragover", e => {
         e.preventDefault();
+        if(!panelType.showDropPreview) { return; }
+        const bounds = p.getBoundingClientRect();
+        const normX = (e.clientX - bounds.left) / (bounds.right - bounds.left);
+        const normY = (e.clientY - bounds.top) / (bounds.bottom - bounds.top);
+        const normCX = normX - 0.5;
+        const normCY = normY - 0.5;
+        const isFull = Math.abs(normCX) < 0.25 && Math.abs(normCY) < 0.25 
+            && panelType.allowDragReplacement;
+        const previewClass = isFull
+            ? "preview-full" 
+            : (Math.abs(normCX) > Math.abs(normCY))
+                ? (normCX < 0? "preview-left" : "preview-right")
+                : (normCY < 0? "preview-top" : "preview-bottom");
+        prev.classList.remove(...DROP_PREVIEW_CLASSES);
+        prev.classList.add(previewClass);
+    });
+    p.addEventListener("dragleave", () => {
+        prev.classList.remove(...DROP_PREVIEW_CLASSES);
     });
     p.addEventListener("drop", e => {
         if(draggedPanel === null) { return; }
         e.preventDefault();
+        const cleanup = () => {
+            draggedPanel = null;
+            prev.classList.remove(...DROP_PREVIEW_CLASSES);  
+        };
         const bounds = p.getBoundingClientRect();
         const normX = (e.clientX - bounds.left) / (bounds.right - bounds.left);
         const normY = (e.clientY - bounds.top) / (bounds.bottom - bounds.top);
         const normCX = normX - 0.5;
         const normCY = normY - 0.5;
         let newPanel;
-        const allowReplacement = Panel[panel.id].allowDragReplacement;
-        if(Math.abs(normCX) < 0.25 && Math.abs(normCY) < 0.25 && allowReplacement) {
-            newPanel = draggedPanel();
-            Panel[panel.id].close(panel);
+        const isFull = Math.abs(normCX) < 0.25 && Math.abs(normCY) < 0.25 
+            && panelType.allowDragReplacement;
+        if(isFull) {
+            newPanel = draggedPanel(panel);
+            if(newPanel === null) { return cleanup(); }
+            panelType.close(panel);
         } else {
+            const added = draggedPanel();
+            if(added === null) { return cleanup(); }
             newPanel = (Math.abs(normCX) > Math.abs(normCY))
                 ? normCX >= 0
-                    ? Panel.HorizontalList.create(panel, draggedPanel())
-                    : Panel.HorizontalList.create(draggedPanel(), panel)
+                    ? Panel.HorizontalList.create(panel, added)
+                    : Panel.HorizontalList.create(added, panel)
                 : normCY >= 0
-                    ? Panel.VerticalList.create(panel, draggedPanel())
-                    : Panel.VerticalList.create(draggedPanel(), panel);
+                    ? Panel.VerticalList.create(panel, added)
+                    : Panel.VerticalList.create(added, panel);
         }
         if(parentPanel !== null) {
             const i = parentPanel.children
@@ -459,7 +514,7 @@ function buildPanel(panel, session, parentPanel = null) {
         } else {
             session.panel = newPanel;
         }
-        draggedPanel = null;
+        cleanup();
         applyLayout(session);
         saveSession();
     });
@@ -470,7 +525,8 @@ function applyLayout(session) {
     session.panel = Panel[session.panel.id].replace(session.panel);
     document.body.innerHTML = "";
     document.body.appendChild(buildPanel(session.panel, session));
-    document.title = `Dreben | ${session.projectPath.split("/").at(-1)}`;
+    document.title 
+        = `Dreben | ${session.projectPath.split("/").filter(s => s).at(-1)}`;
 }
 
 function updateLayout(session) {
