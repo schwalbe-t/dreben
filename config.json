@@ -38,6 +38,15 @@
         "r": "r",
         "swift": "swift",
         "kt": "kotlin",
-        "dart": "dart"
+        "dart": "dart",
+
+        "quill": "quill"
+    },
+    "tmGrammars": {
+        "quill": {
+            "scope": "source.quill",
+            "format": "plist",
+            "file": "quill.tmlanguage"
+        }
     }
 }

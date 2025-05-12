@@ -317,6 +317,9 @@ const Panel = Object.freeze({
                     editor: monaco.editor.create(element, params),
                     title
                 };
+                MonacoEditorTextmate.wireTmGrammars(
+                    monaco, grammarRegistry, tmGrammarScopes, editor.editor
+                );
                 file.editors.set(panel, editor);
                 editor.editor.onDidChangeModelContent(() => {
                     editor.title.innerText = `${panel.path} ⬤`;

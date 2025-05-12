@@ -29,6 +29,23 @@ function saveSession() {
 let serverPath = null;
 let configPath = null;
 let config = null;
+let tmGrammarScopes = new Map();
+let grammarRegistry = new MonacoTextmate.Registry({
+    getGrammarDefinition: async (scopeName) => {
+        for(const lang in config.tmGrammars) {
+            const entry = config.tmGrammars[lang];
+            if(entry.scope !== scopeName) { continue; }
+            const path = joinPaths(serverPath, joinPaths("grammars", entry.file));
+            const r = await fetch(`/read?filePath=${encodeURIComponent(path)}`);
+            const text = await r.text();
+            return {
+                format: entry.format,
+                content: text
+            };
+        }
+        throw `Unknown language scope '${scopeName}'`;
+    }
+});
 function loadConfig(onDone) {
     fetch("/server_path").then(r => r.text()).then(p => {
         serverPath = p;
@@ -64,6 +81,10 @@ function loadTheme(onDone) {
                     '--editor-text',
                     themeData.colors["editor.foreground"]
                 );
+                for(const lang in config.tmGrammars) {
+                    monaco.languages.register({ id: lang });
+                    tmGrammarScopes.set(lang, config.tmGrammars[lang].scope);
+                }
                 onDone();
             });
     });
@@ -73,8 +94,12 @@ function loadWindow(onDone) {
     window.onload = () => onDone();
 }
 
+function loadOnigasm(onDone) {
+    Onigasm.loadWASM("/node_modules/onigasm/lib/onigasm.wasm").then(onDone);
+}
+
 let fileTree = null;
-loadAll([ loadConfig, loadWindow ], () => {
+loadAll([ loadConfig, loadWindow, loadOnigasm ], () => {
     applyLayout(session);
     if(session.projectPath !== null) {
         collectFileTree(session.projectPath).then(t => {
