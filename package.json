@@ -4,6 +4,7 @@
     "monaco-editor": "^0.52.2",
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
+    "monaco-vscode-textmate-theme-converter": "^0.1.7",
     "onigasm": "^2.2.5",
     "path-browserify": "^1.0.1"
   },

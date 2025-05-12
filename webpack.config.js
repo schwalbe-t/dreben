@@ -1,5 +1,5 @@
 
-const path = require('path')
+const path = require('path');
 
 module.exports = {
     entry: './deps_bundle.js',
@@ -9,8 +9,8 @@ module.exports = {
     },
     mode: 'production',
     resolve: {
-        fallback: {
+        fallback: { 
             path: require.resolve('path-browserify')
         }
-    }    
+    }
 };

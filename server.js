@@ -3,7 +3,7 @@ const express = require("express");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-
+const { convertTheme } = require("monaco-vscode-textmate-theme-converter");
 
 const PORT = 3000;
 
@@ -42,6 +42,20 @@ app.get('/read', (req, res) => {
             return res.status(500).send('Unable to read file');
         }
         res.send(data);
+    });
+});
+
+app.get('/read_theme', (req, res) => {
+    const { filePath } = req.query;
+    if(!filePath) {
+        return res.status(400).send('File path is required');
+    }
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if(err) {
+            return res.status(500).send('Unable to read file');
+        }
+        const converted = convertTheme(JSON.parse(data));
+        res.send(JSON.stringify(converted));
     });
 });
 

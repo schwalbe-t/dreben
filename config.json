@@ -1,7 +1,7 @@
 {
     "editor": {
         "fontLigatures": true,
-        "fontWeight": "750",
+        "fontWeight": "700",
         "fontFamily": "Noto Sans Mono",
         "minimap": { "enabled": false },
         "rulers": [ 80 ],
@@ -10,43 +10,175 @@
             "indentation": false 
         }
     },
-    "themePath": "Dracula.json",
+
+    "themePath": "bearded-theme-hc-minuit.json",
+    
     "fileExtensions": {
+        "quill": "quill",
         "js": "javascript",
-        "ts": "typescript",
-        "py": "python",
-        "java": "java",
         "cpp": "cpp", "hpp": "cpp", "h": "cpp", 
-        "cc": "cpp", "c++": "cpp", "cxx": "cpp",
-        "c": "c",
-        "cs": "csharp",
-        "php": "php",
-        "go": "go",
-        "rb": "ruby",
-        "rs": "rust",
+        "c": "cpp", "cc": "cpp", "c++": "cpp", "cxx": "cpp",
         "html": "html",
         "css": "css",
         "json": "json",
-        "md": "markdown",
-        "yaml": "yaml",
-        "yml": "yaml",
-        "xml": "xml",
-        "sh": "shell",
-        "dockerfile": "dockerfile",
-        "makefile": "makefile",
-        "lua": "lua",
-        "r": "r",
-        "swift": "swift",
-        "kt": "kotlin",
-        "dart": "dart",
-
-        "quill": "quill"
+        "md": "markdown"
     },
+    
     "tmGrammars": {
         "quill": {
             "scope": "source.quill",
-            "format": "plist",
-            "file": "quill.tmlanguage"
+            "grammar": { "format": "plist", "file": "quill.tmlanguage" },
+            "config": {
+                "comments": { "lineComment": "//" },
+                "brackets": [ 
+                    ["[", "]"], ["(", ")"], ["{", "}"] 
+                ],
+                "autoClosingPairs": [
+                    { "open": "[", "close": "]", "notIn": ["string"] },
+                    { "open": "(", "close": ")", "notIn": ["string"] },
+                    { "open": "{", "close": "}", "notIn": ["string"] },
+                    { "open": "\"", "close": "\"", "notIn": ["string"] }
+                ],
+                "autoCloseBefore": "]) \n\t",
+                "surroundingPairs": [ 
+                    ["[", "]"], ["(", ")"], ["{", "}"], ["\"", "\""] 
+                ]
+            }
+        },
+        "javascript": {
+            "scope": "source.js",
+            "grammar": { "format": "json", "file": "javascript.tmlanguage" },
+            "config": {
+                "comments": {
+                    "lineComment": "//",
+                    "blockComment": ["/*", "*/"]
+                },
+                "brackets": [
+                    ["${", "}"], ["{", "}"], ["[", "]"], ["(", ")"]
+                ],
+                "autoClosingPairs": [
+                    { "open": "{", "close": "}" },
+                    { "open": "[", "close": "]" },
+                    { "open": "(", "close": ")" },
+                    { "open": "'", "close": "'", "notIn": ["string", "comment"] },
+                    { "open": "\"", "close": "\"", "notIn": ["string"] },
+                    { "open": "`", "close": "`", "notIn": ["string", "comment"] },
+                    { "open": "/**", "close": " */", "notIn": ["string"] }
+                ],
+                "surroundingPairs": [
+                    ["{", "}"], ["[", "]"], ["(", ")"], ["'", "'"], 
+                    ["\"", "\""], ["`", "`"], ["<", ">"]
+                ],
+                "autoCloseBefore": ";:.,=}])>` \n\t"
+            }
+        },
+        "cpp": {
+            "scope": "source.cpp",
+            "grammar": { "format": "json", "file": "cpp.tmlanguage" },
+            "config": {
+                "comments": {
+                    "lineComment": "//",
+                    "blockComment": ["/*", "*/"]
+                },
+                "brackets": [
+                    ["{", "}"], ["[", "]"], ["(", ")"]
+                ],
+                "autoClosingPairs": [
+                    { "open": "[", "close": "]" },
+                    { "open": "{", "close": "}" },
+                    { "open": "(", "close": ")" },
+                    { "open": "'", "close": "'", "notIn": ["string", "comment"] },
+                    { "open": "\"", "close": "\"", "notIn": ["string"] },
+                    { "open": "/*", "close": "*/", "notIn": ["string", "comment"] },
+                    { "open": "/**", "close": " */", "notIn": ["string"] }
+                ],
+                "surroundingPairs": [
+                    ["{", "}"], ["[", "]"], ["(", ")"], ["\"", "\""],
+                    ["'", "'"], ["<", ">"]
+                ]
+            }
+        },
+        "html": {
+            "scope": "text.html.basic",
+            "grammar": { "format": "json", "file": "html.tmlanguage" },
+            "config": {
+                "comments": { "blockComment": [ "<!--", "-->" ] },
+                "brackets": [ ["<!--", "-->"], ["{", "}"], ["(", ")"] ],
+                "autoClosingPairs": [
+                    { "open": "{", "close": "}"},
+                    { "open": "[", "close": "]"},
+                    { "open": "(", "close": ")" },
+                    { "open": "'", "close": "'" },
+                    { "open": "\"", "close": "\"" },
+                    { "open": "<!--", "close": "-->", "notIn": [ "comment", "string" ]}
+                ],
+                "surroundingPairs": [
+                    { "open": "'", "close": "'" },
+                    { "open": "\"", "close": "\"" },
+                    { "open": "{", "close": "}"},
+                    { "open": "[", "close": "]"},
+                    { "open": "(", "close": ")" },
+                    { "open": "<", "close": ">" }
+                ]
+            }
+        },
+        "css": {
+            "scope": "source.css",
+            "grammar": { "format": "json", "file": "css.tmlanguage" },
+            "config": {
+                "comments": { "blockComment": ["/*", "*/"] },
+                "brackets": [
+                    ["{", "}"], ["[", "]"], ["(", ")"]
+                ],
+                "autoClosingPairs": [
+                    { "open": "{", "close": "}", "notIn": ["string", "comment"] },
+                    { "open": "[", "close": "]", "notIn": ["string", "comment"] },
+                    { "open": "(", "close": ")", "notIn": ["string", "comment"] },
+                    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] },
+                    { "open": "'", "close": "'", "notIn": ["string", "comment"] }
+                ],
+                "surroundingPairs": [
+                    ["{", "}"], ["[", "]"], ["(", ")"], ["\"", "\""], ["'", "'"]
+                ]
+            }
+        },
+        "json": {
+            "scope": "source.json",
+            "grammar": { "format": "json", "file": "json.tmlanguage" },
+            "config": {
+                "comments": {
+                    "lineComment": "//",
+                    "blockComment": ["/*", "*/"]
+                },
+                "brackets": [ ["{", "}"], ["[", "]"] ],
+                "autoClosingPairs": [
+                    { "open": "{", "close": "}", "notIn": ["string"] },
+                    { "open": "[", "close": "]", "notIn": ["string"] },
+                    { "open": "(", "close": ")", "notIn": ["string"] },
+                    { "open": "'", "close": "'", "notIn": ["string"] },
+                    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] },
+                    { "open": "`", "close": "`", "notIn": ["string", "comment"] }
+                ]
+            }
+        },
+        "markdown": {
+            "scope": "text.html.markdown",
+            "grammar": { "format": "json", "file": "markdown.tmlanguage" },
+            "config": {
+                "comments": { "blockComment": ["<!--", "-->"] },
+                "brackets": [ ["{", "}"], ["[", "]"], ["(", ")"] ],
+                "autoClosingPairs": [
+                    { "open": "{", "close": "}" },
+                    { "open": "[", "close": "]" },
+                    { "open": "(", "close": ")" },
+                    { "open": "<", "close": ">", "notIn": ["string"] }
+                ],
+                "surroundingPairs": [
+                    ["(", ")"], ["[", "]"], ["`", "`"], ["_", "_"],
+                    ["*", "*"], ["{", "}"], ["'", "'"], ["\"", "\""],
+                    ["<", ">"], ["~", "~"], ["$", "$"]
+                ]
+            }
         }
     }
 }

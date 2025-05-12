@@ -35,11 +35,13 @@ let grammarRegistry = new MonacoTextmate.Registry({
         for(const lang in config.tmGrammars) {
             const entry = config.tmGrammars[lang];
             if(entry.scope !== scopeName) { continue; }
-            const path = joinPaths(serverPath, joinPaths("grammars", entry.file));
+            const path = joinPaths(
+                serverPath, joinPaths("grammars", entry.grammar.file)
+            );
             const r = await fetch(`/read?filePath=${encodeURIComponent(path)}`);
             const text = await r.text();
             return {
-                format: entry.format,
+                format: entry.grammar.format,
                 content: text
             };
         }
@@ -63,7 +65,7 @@ let themeData = null;
 function loadTheme(onDone) {
     const themePath = joinPaths(joinPaths(serverPath, "themes"), config.themePath);
     require(['vs/editor/editor.main'], () => {
-        fetch(`/read?filePath=${encodeURIComponent(themePath)}`)
+        fetch(`/read_theme?filePath=${encodeURIComponent(themePath)}`)
             .then(r => r.text())
             .then(content => {
                 themeData = JSON.parse(content);
@@ -82,8 +84,12 @@ function loadTheme(onDone) {
                     themeData.colors["editor.foreground"]
                 );
                 for(const lang in config.tmGrammars) {
+                    const entry = config.tmGrammars[lang];
                     monaco.languages.register({ id: lang });
-                    tmGrammarScopes.set(lang, config.tmGrammars[lang].scope);
+                    monaco.languages.setLanguageConfiguration(
+                        lang, entry.config
+                    );
+                    tmGrammarScopes.set(lang, entry.scope);
                 }
                 onDone();
             });
